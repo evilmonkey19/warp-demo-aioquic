@@ -65,6 +65,9 @@ func NewServer(config ServerConfig, media *Media) (s *Server, err error) {
 	}
 
 	s.media = media
+	var audio *MediaStream
+	var video *MediaStream
+	audio, video, err = media.Start()
 
 	http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
 		session, ok := r.Body.(*webtransport.Session)
@@ -73,7 +76,7 @@ func NewServer(config ServerConfig, media *Media) (s *Server, err error) {
 			return
 		}
 
-		ss, err := NewSession(session, s.media, s.socket)
+		ss, err := NewSession(session, s.media, s.socket, audio, video)
 		if err != nil {
 			// TODO handle better?
 			log.Printf("failed to create warp session: %v", err)
@@ -90,7 +93,6 @@ func NewServer(config ServerConfig, media *Media) (s *Server, err error) {
 			return nil
 		})
 	})
-
 	return s, nil
 }
 

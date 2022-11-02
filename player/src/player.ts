@@ -19,9 +19,6 @@ export class Player {
 
 	// References to elements in the DOM
 	vidRef: HTMLVideoElement; // The video element itself
-	statsRef: HTMLElement; // The stats div
-	throttleRef: HTMLButtonElement; // The throttle button
-	throttleCount: number; // number of times we've clicked the button in a row
 
 	interval: number;
 
@@ -29,9 +26,6 @@ export class Player {
 
 	constructor(props: any) {
 		this.vidRef = props.vid
-		this.statsRef = props.stats
-		this.throttleRef = props.throttle
-		this.throttleCount = 0
 
 		this.mediaSource = new MediaSource()
 		this.vidRef.src = URL.createObjectURL(this.mediaSource)
@@ -54,8 +48,6 @@ export class Player {
 		// async functions
 		this.receiveStreams()
 
-		// Limit to 4Mb/s
-		this.sendThrottle()
 	}
 
 	async close() {
@@ -76,53 +68,12 @@ export class Player {
 		writer.release()
 	}
 
-	throttle() {
-		// Throttle is incremented each time we click the throttle button
-		this.throttleCount += 1
-		this.sendThrottle()
-
-		// After 5 seconds disable the throttling
-		setTimeout(() => {
-			this.throttleCount -= 1
-			this.sendThrottle()
-		}, 5000)
-	}
-
-	sendThrottle() {
-		// TODO detect the incoming bitrate instead of hard-coding
-		const bitrate = 4 * 1024 * 1024 // 4Mb/s
-
-		// Right shift by throttle to divide by 2,4,8,16,etc each time
-		// Right shift by 3 more to divide by 8 to convert bits to bytes
-		// Right shift by another 2 to divide by 4 to get the number of bytes in a quarter of a second
-		let rate = bitrate >> (this.throttleCount + 3)
-		let buffer = bitrate >> (this.throttleCount + 5) // 250ms before dropping
-
-		const str = formatBits(8*rate) + "/s"
-		this.throttleRef.textContent = `Throttle: ${ str }`;
-
-		// NOTE: We don't use random packet loss because it's not a good simulator of how congestion works.
-		// Delay-based congestion control like BBR most ignores packet loss, rightfully so.
-
-		// Send the server a message to fake network congestion.
-		// This is done on the server side at the socket-level for maximum accuracy (impacts all packets).
-		this.sendMessage({
-			"x-throttle": {
-				rate: rate,
-				buffer: buffer,
-			},
-		})
-	}
-
 	tick() {
 		// Try skipping ahead if there's no data in the current buffer.
 		this.trySeek()
 
 		// Try skipping video if it would fix any desync.
 		this.trySkip()
-
-		// Update the stats at the end
-		this.updateStats()
 	}
 
 	goLive() {
@@ -268,18 +219,6 @@ export class Player {
 		}
 
 		segment.finish()
-	}
-
-	updateStats() {
-		for (const child of this.statsRef.children) {
-			if (child.className == "audio buffer") {
-				const ranges: any = (this.audio) ? this.audio.buffered() : { length: 0 }
-				this.visualizeBuffer(child as HTMLElement, ranges)
-			} else if (child.className == "video buffer") {
-				const ranges: any = (this.video) ? this.video.buffered() : { length: 0 }
-				this.visualizeBuffer(child as HTMLElement, ranges)
-			}
-		}
 	}
 
 	visualizeBuffer(element: HTMLElement, ranges: TimeRanges) {

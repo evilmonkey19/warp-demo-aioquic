@@ -31,21 +31,9 @@
 		const params = new URLSearchParams(window.location.search)
 
 		const player = new Player({
-			url: params.get("url") || "https://localhost.warp.demo:4443",
+			url: params.get("url") || "https://localhost.warp.demo:4441",
 
 			vid: vidRef,
-			stats: statsRef,
-			throttle: throttleRef,
-		})
-
-		liveRef.addEventListener("click", (e) => {
-			e.preventDefault()
-			player.goLive()
-		})
-
-		throttleRef.addEventListener("click", (e) => {
-			e.preventDefault()
-			player.throttle()
 		})
 
 		playRef.addEventListener('click', (e) => {

@@ -25,11 +25,13 @@ type Session struct {
 	streams invoker.Tasks
 }
 
-func NewSession(session *webtransport.Session, media *Media, socket *Socket) (s *Session, err error) {
+func NewSession(session *webtransport.Session, media *Media, socket *Socket, audio *MediaStream, video *MediaStream) (s *Session, err error) {
 	s = new(Session)
 	s.inner = session
 	s.media = media
 	s.socket = socket
+	s.audio = audio
+	s.video = video
 	return s, nil
 }
 
@@ -38,10 +40,11 @@ func (s *Session) Run(ctx context.Context) (err error) {
 	s.inner.AcceptSession()
 	defer s.inner.CloseSession()
 
-	s.audio, s.video, err = s.media.Start()
-	if err != nil {
-		return fmt.Errorf("failed to start media: %w", err)
-	}
+	/*
+		s.audio, s.video, err = s.media.Start()
+		if err != nil {
+			return fmt.Errorf("failed to start media: %w", err)
+		}*/
 
 	// Once we've validated the session, now we can start accessing the streams
 	return invoker.Run(ctx, s.runAccept, s.runAcceptUni, s.runAudio, s.runVideo, s.streams.Repeat)

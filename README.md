@@ -13,7 +13,7 @@ This demo currently only works on Chrome for two reasons:
 The ability to skip video abuses the fact that Chrome can play audio without video for up to 3 seconds (hardcoded!) when using MSE. It is possible to use something like WebCodecs instead... but that's still Chrome only at the moment.
 
 ## Streaming
-This demo works by reading pre-encoded media and sleeping based on media timestamps. Obviously this is not a live stream; you should plug in your own encoder or source.
+This demo works by reading pre-encoded media and sleeping based on media timestamps. Obviously this is not a live stream; you should plug in your own encoder or source. (The code have been modified to generate real live-streaming from ffmpeg just intended for testing purposes).
 
 The media is encoded on disk as a LL-DASH playlist. There's a crude parser and I haven't used DASH before so don't expect it to work with arbitrary inputs.
 
@@ -55,9 +55,9 @@ Download your favorite media file:
 wget http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4 -O media/combined.mp4
 ```
 
-Use ffmpeg to create a LL-DASH playlist. This creates a segment every 2s and MP4 fragment every 10ms.
+Use ffmpeg to create a LL-DASH playlist. This creates a segment every 2s and MP4 fragment every 10ms in an infinite loop.
 ```
-ffmpeg -i media/combined.mp4 -f dash -use_timeline 0 -r:v 24 -g:v 48 -keyint_min:v 48 -sc_threshold:v 0 -tune zerolatency -streaming 1 -ldash 1 -seg_duration 2 -frag_duration 0.01 -frag_type duration media/fragmented.mpd
+ffmpeg -re -stream_loop -1 -i media/combined.mp4 -f dash -use_timeline 0 -r:v 24 -g:v 48 -keyint_min:v 48 -sc_threshold:v 0 -tune zerolatency -streaming 1 -ldash 1 -seg_duration 2 -frag_duration 0.01 -frag_type -remove_at_exit 1 duration media/fragmented.mpd
 ```
 
 You can increase the `frag_duration` (microseconds) to slightly reduce the file size in exchange for higher latency.

@@ -34,18 +34,6 @@
 			url: params.get("url") || "https://localhost.warp.demo:4443",
 
 			vid: vidRef,
-			stats: statsRef,
-			throttle: throttleRef,
-		})
-
-		liveRef.addEventListener("click", (e) => {
-			e.preventDefault()
-			player.goLive()
-		})
-
-		throttleRef.addEventListener("click", (e) => {
-			e.preventDefault()
-			player.throttle()
 		})
 
 		playRef.addEventListener('click', (e) => {
