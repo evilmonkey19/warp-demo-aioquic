@@ -57,7 +57,7 @@ wget http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBun
 
 Use ffmpeg to create a LL-DASH playlist. This creates a segment every 2s and MP4 fragment every 10ms in an infinite loop.
 ```
-ffmpeg -re -stream_loop -1 -i media/combined.mp4 -f dash -use_timeline 0 -r:v 24 -g:v 48 -keyint_min:v 48 -sc_threshold:v 0 -tune zerolatency -streaming 1 -ldash 1 -seg_duration 2 -frag_duration 0.01 -frag_type -remove_at_exit 1 duration media/fragmented.mpd
+ffmpeg -re -stream_loop -1 -i media/combined.mp4 -f dash -use_timeline 0 -r:v 24 -g:v 48 -keyint_min:v 48 -sc_threshold:v 0 -tune zerolatency -streaming 1 -ldash 1 -seg_duration 2 -frag_duration 0.01 -frag_type duration -remove_at_exit 1 media/fragmented.mpd
 ```
 
 You can increase the `frag_duration` (microseconds) to slightly reduce the file size in exchange for higher latency.
