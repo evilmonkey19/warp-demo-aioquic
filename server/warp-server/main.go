@@ -43,11 +43,11 @@ func run(ctx context.Context) (err error) {
 	key := flag.String("tls-key", "../cert/localhost.warp.demo.key", "TLS certificate file path")
 	logDir := flag.String("log-dir", "", "logs will be written to the provided directory")
 
-	dash := flag.String("dash", "../media/fragmented.mpd", "DASH playlist path")
+	hls := flag.String("hls", "../media/fragmented.m3u8", "HLS playlist path")
 
 	flag.Parse()
 
-	media, err := warp.NewMedia(*dash)
+	media, err := warp.NewMedia(*hls)
 	if err != nil {
 		return fmt.Errorf("failed to open media: %w", err)
 	}

@@ -5,8 +5,6 @@ from aioquic.asyncio import serve
 from aioquic.quic.configuration import QuicConfiguration
 from aioquic.h3.connection import H3_ALPN
 
-from .webtransport_server import CounterHandler
-
 
 class ServerConfig:
     ip : str

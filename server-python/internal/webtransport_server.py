@@ -1,5 +1,6 @@
 # AIOQUIC
 # Takens parts from https://github.com/dynamite-bud/webTransport-server/blob/main/wt_server.py
+import asyncio
 from typing import Dict, Optional, List, Tuple
 from collections import defaultdict
 
@@ -17,7 +18,8 @@ class WebTransportProtocol(QuicConnectionProtocol):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._http : Optional[H3Connection] = None
-        self._handler : Optional[CounterHandler] = None
+        self._handler : Optional[ChunkHandler] = None
+
 
     def quic_event_received(self, event: QuicEvent) -> None:
         if isinstance(event, ProtocolNegotiated):
@@ -60,8 +62,9 @@ class WebTransportProtocol(QuicConnectionProtocol):
             return
         if path == b'/':
             assert(self._handler is None)
-            self._handler = CounterHandler(stream_id, self._http)
+            self._handler = ChunkHandler(stream_id, self)
             self._send_response(stream_id, 200)
+            self._handler.sendChunks()
         else:
             self._send_response(stream_id, 404, end_stream=True)
 
@@ -83,30 +86,25 @@ class WebTransportProtocol(QuicConnectionProtocol):
             end_stream=end_stream
         )
 
-# CounterHandler implements a really simple protocol:
-#   - For every incoming bidirectional stream, it counts bytes it receives on
-#     that stream until the stream is closed, and then replies with that byte
-#     count on the same stream.
-#   - For every incoming unidirectional stream, it counts bytes it receives on
-#     that stream until the stream is closed, and then replies with that byte
-#     count on a new unidirectional stream.
-#   - For every incoming datagram, it sends a datagram with the length of
-#     datagram that was just received.
-class CounterHandler:
+# ChunkHandler implements a really simple protocol:
+#   - Pushes the stream segmets read from the HLS playlist as datagrams
+class ChunkHandler:
 
-    def __init__(self, session_id, http: H3Connection) -> None:
+    def __init__(self, session_id, protocol: QuicConnectionProtocol) -> None:
         self._session_id = session_id
-        self._http = http
+        self._http = protocol._http
+        self.protocol = protocol
         self._counters = defaultdict(int)
-        self._num_messages = 0
+        
 
     def h3_event_received(self, event: H3Event) -> None:
+        # DATAGRAM
         if isinstance(event, DatagramReceived):
-            payload = str(len(event.data)).encode('ascii')
-            self._http.send_datagram(self._session_id, payload)
+            print('received datagram')
+            asyncio.create_task(datagram_chunk_handler(self, self._session_id))
 
+        # STREAM
         if isinstance(event, WebTransportStreamDataReceived):
-            self._num_messages += 1
             self._counters[event.stream_id] += len(event.data)
             if event.stream_ended:
                 if stream_is_unidirectional(event.stream_id):
@@ -114,17 +112,49 @@ class CounterHandler:
                         self._session_id, is_unidirectional=True)
                 else:
                     response_id = event.stream_id
-                    payload = str(self._counters[event.stream_id]).encode('ascii')
-                    self._http._quic.send_stream_data(
-                        response_id, payload, end_stream=True)
-                    self.stream_closed(event.stream_id)
-            else:
-                if(self._num_messages==1):
-                    print(event.data)
-                response_id = event.stream_id
+                
+                asyncio.create_task(stream_chunk_handler(self, response_id))
 
     def stream_closed(self, stream_id: int) -> None:
         try:
             del self._counters[stream_id]
         except KeyError:
             pass
+
+    def create_payload(self):
+        with open('test.m4s', 'rb') as f:
+            return f.read()
+
+    def sendChunks(self):
+        response_id = self._http.create_webtransport_stream(
+            self._session_id, is_unidirectional=True
+        )
+        asyncio.create_task(stream_chunk_handler(self, response_id))
+
+async def datagram_chunk_handler(self, stream_id):
+    print('datagram_chunk_handler')
+    for i in range(10):
+        payload = self.create_payload()
+        print(f'sending datagram {i}')
+        self._http.send_datagram(stream_id, payload)
+        self.protocol.transmit()
+        await asyncio.sleep(1)
+
+    payload = f'end of stream'.encode('ascii')
+    self._http.send_datagram(stream_id, payload)
+
+async def stream_chunk_handler(self, stream_id):
+    print('stream_chunk_handler')
+    for i in range(10):
+        payload = self.create_payload()
+        print(f'sending chunk {i}')
+        self._http._quic.send_stream_data(
+            stream_id, payload, end_stream=False)
+        self.protocol.transmit()
+        await asyncio.sleep(1)
+
+    payload = f'end of stream'.encode('ascii')
+    self._http._quic.send_stream_data(stream_id, payload, end_stream=True)
+
+
+

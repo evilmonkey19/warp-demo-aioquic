@@ -131,6 +131,7 @@ export class Player {
 		const streams = q.incomingUnidirectionalStreams.getReader()
 
 		while (true) {
+			console.log("RECIBO COSAS")
 			const result = await streams.read()
 			if (result.done) break
 
@@ -144,17 +145,16 @@ export class Player {
 
 		while (!await r.done()) {
 			const size = await r.uint32();
-			const typ = new TextDecoder('utf-8').decode(await r.bytes(4));
 
-			if (typ != "warp") throw "expected warp atom"
-			if (size < 8) throw "atom too small"
-
-			const payload = new TextDecoder('utf-8').decode(await r.bytes(size - 8));
+			console.log("HELLO THERE")
+			const payload = new TextDecoder('utf-8').decode(await r.bytes(size));
 			const msg = JSON.parse(payload) as Message
 
 			if (msg.init) {
+				console.log("ANDIAMOS1")
 				return this.handleInit(r, msg.init)
 			} else if (msg.segment) {
+				console.log("ANDIAMOS2")
 				return this.handleSegment(r, msg.segment)
 			}
 		}
