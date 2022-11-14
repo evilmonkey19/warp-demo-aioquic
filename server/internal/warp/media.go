@@ -33,11 +33,10 @@ func NewMedia(playlistPath string) (m *Media, err error) {
 	m.base = os.DirFS(filepath.Dir(playlistPath))
 
 	// Read the playlist file
-	playlist, err := os.Open(playlistPath)
+	playlist, err := mpd.ReadFromFile(playlistPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open playlist: %w", err)
 	}
-	defer f.Close()
 
 	if len(playlist.Periods) > 1 {
 		return nil, fmt.Errorf("multiple periods not supported")

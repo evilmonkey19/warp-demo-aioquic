@@ -64,7 +64,6 @@ class WebTransportProtocol(QuicConnectionProtocol):
             assert(self._handler is None)
             self._handler = ChunkHandler(stream_id, self)
             self._send_response(stream_id, 200)
-            self._handler.sendChunks()
         else:
             self._send_response(stream_id, 404, end_stream=True)
 
@@ -101,19 +100,19 @@ class ChunkHandler:
         # DATAGRAM
         if isinstance(event, DatagramReceived):
             print('received datagram')
-            asyncio.create_task(datagram_chunk_handler(self, self._session_id))
+            asyncio.create_task(datagram_m3u8_handler(self, self._session_id))
 
         # STREAM
         if isinstance(event, WebTransportStreamDataReceived):
             self._counters[event.stream_id] += len(event.data)
-            if event.stream_ended:
+            if event.stream_ended:  
                 if stream_is_unidirectional(event.stream_id):
                     response_id = self._http.create_webtransport_stream(
                         self._session_id, is_unidirectional=True)
-                else:
-                    response_id = event.stream_id
+            else:
+                response_id = event.stream_id
                 
-                asyncio.create_task(stream_chunk_handler(self, response_id))
+            asyncio.create_task(stream_m3u8_handler(self, response_id))
 
     def stream_closed(self, stream_id: int) -> None:
         try:
@@ -131,6 +130,11 @@ class ChunkHandler:
         )
         asyncio.create_task(stream_chunk_handler(self, response_id))
 
+async def datagram_m3u8_handler(self, stream_id, m3u8_url = "http://localhost:8080/media/playlist.m3u8"):
+    payload = f'{m3u8_url}'.encode('ascii')
+    self._http.send_datagram(stream_id, payload)
+    self.protocol.transmit()
+
 async def datagram_chunk_handler(self, stream_id):
     print('datagram_chunk_handler')
     for i in range(10):
@@ -142,6 +146,11 @@ async def datagram_chunk_handler(self, stream_id):
 
     payload = f'end of stream'.encode('ascii')
     self._http.send_datagram(stream_id, payload)
+
+async def stream_m3u8_handler(self, stream_id, m3u8_url = 'http://localhost:8000/media/playlist.m3u8'):
+    payload = f'{m3u8_url}'.encode('ascii')
+    self._http._quic.send_stream_data(stream_id, payload, end_stream=True)
+    self.protocol.transmit()
 
 async def stream_chunk_handler(self, stream_id):
     print('stream_chunk_handler')

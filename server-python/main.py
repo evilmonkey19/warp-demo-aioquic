@@ -1,5 +1,4 @@
 import argparse
-#from internal.media import Media
 from internal.server import ServerConfig, Server
 
 def get_args() -> argparse.Namespace:
@@ -13,12 +12,11 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("-c", "--tls-cert", type=str, default="../cert/localhost.warp.demo.crt", help="TLS certificate file path", required=True)
     parser.add_argument("-k", "--tls-key", type=str, default="../cert/localhost.warp.demo.key", help="TLS key file path", required=True)
     parser.add_argument("--log-dir", type=str, default="", help="logs will be written to the provided directory")
-    parser.add_argument("-d", "--dash", type=str, default="../media/fragmented.mpd", help="DASH playlist path")
+    parser.add_argument("-m", "--hls", type=str, default="../media/hls.m3u8", help="HLS playlist path")
     return parser.parse_args()
 
 if __name__ == '__main__':
     args: argparse.Namespace = get_args()
-    #media = Media(args.dash)
     config = ServerConfig(args)
     server = Server(config)
     server.run()

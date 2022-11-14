@@ -21,6 +21,40 @@
 		</div>
 
 	</div>
+
+	<script>
+		const vidRef = document.getElementById("vid")
+		const playRef = document.getElementById("play")
+
+		playRef.addEventListener('click', (e) => {
+			vidRef.play()
+			e.preventDefault()
+			enableWT()
+		})
+
+		function playFunc(e) {
+			playRef.style.display = "none"
+			vidRef.removeEventListener('play', playFunc)
+		}
+		vidRef.addEventListener('play', playFunc)
+
+		async function enableWT() {
+			const wt = new WebTransport('https://localhost.warp.demo:4442/')
+			await wt.ready
+			let stream = await wt.createBidirectionalStream();
+			let reader = stream.readable.getReader();
+			let writer = stream.writable.getWriter();
+
+			await writer.write(new Uint8Array([65, 66, 67]));
+			let received = await reader.read();
+			console.log("GUAPO");
+			await wt.close();
+			console.log("GUAPO");
+			console.log(received);
+			console.log(new TextDecoder().decode(received.value));
+		}
+	</script>
+	<!--
 	<script>
 		if (Hls.isSupported()) {
 		const video = document.getElementById("vid");
@@ -57,5 +91,6 @@
 	}
 		
 	</script>
+-->
 </body>
 </html>
