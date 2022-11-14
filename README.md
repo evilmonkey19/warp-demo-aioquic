@@ -46,26 +46,31 @@ This limit applies to the entire socket so multiple connections will fight for l
 * ffmpeg
 * openssl
 * Chrome Canary
+* caddy
 
 ## Media
 This demo simulates a live stream by reading a file from disk and sleeping based on media timestamps. Obviously you should hook this up to a real live stream to do anything useful.
 
 Download your favorite media file:
 ```
-wget http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4 -O media/combined.mp4
+wget http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4 -O media/stream1.mp4
 ```
 
-Use ffmpeg to create a LL-DASH playlist. This creates a segment every 2s and MP4 fragment every 10ms in an infinite loop.
+Use ffmpeg to create a HLS playlist. This creates a segment every 2s and MPEG-TS2 fragment every 4s in an infinite loop.
 ```
-ffmpeg -re -stream_loop -1 -i media/combined.mp4 -f dash -use_timeline 0 -r:v 24 -g:v 48 -keyint_min:v 48 -sc_threshold:v 0 -tune zerolatency -streaming 1 -ldash 1 -seg_duration 2 -frag_duration 0.01 -frag_type duration -remove_at_exit 1 media/fragmented.mpd
+sh ./media/gen_stream.sh stream1
 ```
 
-You can increase the `frag_duration` (microseconds) to slightly reduce the file size in exchange for higher latency.
+In order to serve the files we use caddy:
+```
+cd media
+caddy run
+```
 
 ## TLS
 Unfortunately, QUIC mandates TLS and makes local development difficult.
 
-If you have a valid certificate you can use it instead of self-signing. The go binaries take a `-cert` and `-key` argument. Skip the remaining steps in this section and use your hostname instead of `localhost.warp.demo`.
+If you have a valid certificate you can use it instead of self-signing. The go binaries take a `-cert` and `-key` argument. Skip the remaining steps in this section and use your hostname instead of `localhost.demo`.
 
 ### Self-Sign
 Generate a self-signed certificate for local testing:
@@ -73,13 +78,13 @@ Generate a self-signed certificate for local testing:
 ./cert/generate
 ```
 
-This creates `cert/localhost.warp.demo.crt` and `cert/localhost.warp.demo.key`.
+This creates `cert/localhost.demo.crt` and `cert/localhost.demo.key`.
 
 ### Origin
 To have the browser accept our self-signed certificate, you'll need to add an entry to `/etc/hosts`.
 
 ```
-echo '127.0.0.1 localhost.warp.demo' | sudo tee -a /etc/hosts
+echo '127.0.0.1 localhost.demo' | sudo tee -a /etc/hosts
 ```
 
 ### Chrome
@@ -89,17 +94,17 @@ Instead, we need to run a *fresh instance* of Chrome, instructing it to allow ou
 
 Launch a new instance of Chrome Canary:
 ```
-/Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary --origin-to-force-quic-on="localhost.warp.demo:4443" --ignore-certificate-errors-spki-list="`./cert/fingerprint`" https://localhost.warp.demo:4444
+/Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary --origin-to-force-quic-on="localhost.demo:4443" --ignore-certificate-errors-spki-list="`./cert/fingerprint`" https://localhost.demo:4444
 ```
 
-Note that this will open our web server on `localhost.warp.demo:4444`, which is started in the next section.
+Note that this will open our web server on `localhost.demo:4444`, which is started in the next section.
 
 ## Server
 The Warp server defaults to listening on UDP 4443. It supports HTTP/3 and WebTransport, pushing media over WebTransport streams once a connection has been established. A more refined implementation would load content based on the WebTransport URL or some other messaging scheme.
 
 ```
-cd server
-go run ./warp-server
+cd server-python
+python main.py -c ../cert/localhost.demo.crt -k ../cert/localhost.demo.key -p 4441 -i localhost.demo -u https://localhost:2015/stream1/stream.m3u8
 ```
 
 ## Web Player
@@ -111,4 +116,4 @@ yarn install
 yarn serve
 ```
 
-These can be accessed on `https://localhost.warp.demo:4444` by default.
+These can be accessed on `https://localhost.demo:4444` by default.

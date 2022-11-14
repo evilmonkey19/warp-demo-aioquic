@@ -5,6 +5,8 @@ from aioquic.asyncio import serve
 from aioquic.quic.configuration import QuicConfiguration
 from aioquic.h3.connection import H3_ALPN
 
+from .config import App
+
 
 class ServerConfig:
     ip : str
@@ -12,6 +14,7 @@ class ServerConfig:
     cert_file : str
     key_file : str
     log_dir : str
+    urls : list[str]
 
     def __init__(self, *args) -> None:
         self.ip = args[0].ip
@@ -19,6 +22,7 @@ class ServerConfig:
         self.cert_file = args[0].tls_cert
         self.key_file = args[0].tls_key
         self.log_dir = args[0].log_dir
+        App.set("urls", args[0].urls.split(":::"))
 
 class Server:
     #inner : WebSocketServerProtocol
@@ -49,6 +53,7 @@ class Server:
                 self.__config.port,
                 configuration=configuration,
                 create_protocol=WebTransportProtocol,
+
             )
         )
 

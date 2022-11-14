@@ -1,10 +1,10 @@
-﻿<!doctype html>
+<!doctype html>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
 <html>
 
 <head>
 	<meta charset = "UTF-8">
-	<title>Streaming 1</title>
+	<title>RANDOOOOM</title>
 
 	<link rel="stylesheet" href="player.css">
 	<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -26,18 +26,17 @@
 		const vidRef = document.getElementById("vid")
 		const playRef = document.getElementById("play")
 		let hls_url = '';
-		vidRef.play()
-		enableWT().then(() => {
-			//console.log('hls_index: ' + hls_url);
-			if (Hls.isSupported()) {
-				var hls = new Hls();
-				hls.loadSource(hls_url);
-				hls.attachMedia(vidRef);
-			}
-		});
-
+        vidRef.play()
+        enableWT().then(() => {
+            //console.log('hls_index: ' + hls_url);
+            if (Hls.isSupported()) {
+                var hls = new Hls();
+                hls.loadSource(hls_url);
+                hls.attachMedia(vidRef);
+            }
+        });
 		async function enableWT() {
-			const wt = new WebTransport('https://localhost.demo:4441/')
+			const wt = new WebTransport('https://localhost.demo:4440/')
 			await wt.ready
 			let stream = await wt.createBidirectionalStream();
 			let reader = stream.readable.getReader();

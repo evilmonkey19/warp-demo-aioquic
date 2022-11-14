@@ -14,6 +14,11 @@ from aioquic.quic.events import (
     StreamReset, 
     QuicEvent, 
 )
+
+import random
+
+from .config import App
+
 class WebTransportProtocol(QuicConnectionProtocol):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -130,8 +135,8 @@ class ChunkHandler:
         )
         asyncio.create_task(stream_chunk_handler(self, response_id))
 
-async def datagram_m3u8_handler(self, stream_id, m3u8_url = "http://localhost:8080/media/playlist.m3u8"):
-    payload = f'{m3u8_url}'.encode('ascii')
+async def datagram_m3u8_handler(self, stream_id):
+    payload = genPayload()
     self._http.send_datagram(stream_id, payload)
     self.protocol.transmit()
 
@@ -147,8 +152,8 @@ async def datagram_chunk_handler(self, stream_id):
     payload = f'end of stream'.encode('ascii')
     self._http.send_datagram(stream_id, payload)
 
-async def stream_m3u8_handler(self, stream_id, m3u8_url = 'http://localhost:8000/media/playlist.m3u8'):
-    payload = f'{m3u8_url}'.encode('ascii')
+async def stream_m3u8_handler(self, stream_id):
+    payload = genPayload()
     self._http._quic.send_stream_data(stream_id, payload, end_stream=True)
     self.protocol.transmit()
 
@@ -167,3 +172,12 @@ async def stream_chunk_handler(self, stream_id):
 
 
 
+def genPayload():
+    urls = App.config('urls')
+    random_num = random.randint(0, len(urls) - 1)
+    if len(urls) > 1 :
+        if (App.config('current_stream') == random_num):
+            random_num = (random_num + 1) % len(urls)
+        App.set('current_stream', random_num)
+    return f'{urls[random_num]}'.encode('ascii')
+    

@@ -4,7 +4,7 @@ set -euxo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 # Generate a new RSA key/cert for local development
-HOST="localhost.warp.demo"
+HOST="localhost.demo"
 
 openssl req \
 	-x509 \

@@ -1,0 +1,6 @@
+localhost:2015 {
+    header {
+        Access-Control-Allow-Origin *
+    }
+    file_server
+}

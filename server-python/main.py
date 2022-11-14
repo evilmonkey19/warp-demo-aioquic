@@ -1,3 +1,4 @@
+
 import argparse
 from internal.server import ServerConfig, Server
 
@@ -12,7 +13,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("-c", "--tls-cert", type=str, default="../cert/localhost.warp.demo.crt", help="TLS certificate file path", required=True)
     parser.add_argument("-k", "--tls-key", type=str, default="../cert/localhost.warp.demo.key", help="TLS key file path", required=True)
     parser.add_argument("--log-dir", type=str, default="", help="logs will be written to the provided directory")
-    parser.add_argument("-m", "--hls", type=str, default="../media/hls.m3u8", help="HLS playlist path")
+    parser.add_argument("-u", "--urls", type=str, default="https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", help="urls to be streamed [separated by <>]")
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -20,4 +21,3 @@ if __name__ == '__main__':
     config = ServerConfig(args)
     server = Server(config)
     server.run()
-

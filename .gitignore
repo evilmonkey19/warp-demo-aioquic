@@ -3,3 +3,4 @@ logs/
 .DS_Store
 .vscode/
 *.code-workspace
+__pycache__*

@@ -1,9 +1,10 @@
 ﻿<!doctype html>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
 <html>
 
 <head>
 	<meta charset = "UTF-8">
-	<title>WARP</title>
+	<title>Streaming 3</title>
 
 	<link rel="stylesheet" href="player.css">
 </head>
@@ -11,7 +12,6 @@
 <body>
 	<div id="player">
 		<div id="screen">
-			<div id="play"><span>click to play</span></div>
 			<video id="vid" controls></video>
 		</div>
 
@@ -20,42 +20,35 @@
 		</div>
 
 	</div>
-<!--
-	<script type="module">
-		import { Player } from "./player.ts"
-
-		// This is so ghetto but I'm too lazy to improve it right now
+	<script>
 		const vidRef = document.getElementById("vid")
 		const playRef = document.getElementById("play")
+		let hls_url = '';
 
-		const params = new URLSearchParams(window.location.search)
+		vidRef.play()
+		enableWT().then(() => {
+			//console.log('hls_index: ' + hls_url);
+			if (Hls.isSupported()) {
+				var hls = new Hls();
+				hls.loadSource(hls_url);
+				hls.attachMedia(vidRef);
+			}
+		});
 
-		const player = new Player({
-			url: params.get("url") || "https://localhost.warp.demo:4443",
+		async function enableWT() {
+			const wt = new WebTransport('https://localhost.demo:4443/')
+			await wt.ready
+			let stream = await wt.createBidirectionalStream();
+			let reader = stream.readable.getReader();
+			let writer = stream.writable.getWriter();
 
-			vid: vidRef,
-		})
-
-		playRef.addEventListener('click', (e) => {
-			vidRef.play()
-			e.preventDefault()
-		})
-		//vidRef.play()
-		
-		function playFunc(e) {
-			playRef.style.display = "none"
-			//player.goLive()
-
-			// Only fire once to restore pause/play functionality
-			vidRef.removeEventListener('play', playFunc)
+			await writer.write(new Uint8Array([65, 66, 67]));
+			let received = await reader.read();
+			await wt.close();
+			//console.log('Received: ' + new TextDecoder().decode(received.value));
+			hls_url = new TextDecoder().decode(received.value);
 		}
 
-		vidRef.addEventListener('play', playFunc)
-		vidRef.volume = 0.5
-
-		// Try to autoplay but ignore errors on mobile; they need to click
-		//vidRef.play().catch((e) => console.warn(e))
 	</script>
--->
 </body>
 </html>
